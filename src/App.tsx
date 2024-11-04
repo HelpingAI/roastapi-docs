@@ -1,270 +1,161 @@
 import React, { useState } from 'react';
-import { Code, Send, Terminal, Copy, Check, Globe, Book, Coffee, Github } from 'lucide-react';
-
-const CodeBlock = ({ language, code }: { language: string; code: string }) => {
-  const [copied, setCopied] = useState(false);
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="relative">
-      <div className="absolute top-0 right-0 flex items-center p-2 space-x-2">
-        <span className="text-xs text-gray-400">{language}</span>
-        <button
-          onClick={() => copyToClipboard(code)}
-          className="p-1.5 rounded-md hover:bg-white/10 transition-colors"
-        >
-          {copied ? (
-            <Check className="w-4 h-4 text-green-400" />
-          ) : (
-            <Copy className="w-4 h-4" />
-          )}
-        </button>
-      </div>
-      <pre className="bg-black/30 p-4 pt-12 rounded-lg font-mono text-sm overflow-x-auto">
-        {code}
-      </pre>
-    </div>
-  );
-};
+import { Terminal, Info, Globe } from 'lucide-react';
+import { Toaster } from 'react-hot-toast';
+import { CodeBlock } from './components/CodeBlock';
+import { Navigation } from './components/Navigation';
+import { LanguageTab } from './components/LanguageTab';
+import { TryItOut } from './components/TryItOut';
+import { AppErrorBoundary } from './components/ErrorBoundary';
+import { codeExamples } from './lib/codeExamples';
+import { motion } from 'framer-motion';
 
 function App() {
-  const [content, setContent] = useState('');
-  const [response, setResponse] = useState('');
-  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('python');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await fetch('https://ai4free-vortex-3b-roast-api.hf.space/generate-roasts/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content }),
-      });
-      const data = await res.json();
-      setResponse(JSON.stringify(data, null, 2));
-    } catch (error) {
-      console.error('Error:', error);
-      setResponse('Error occurred while fetching response');
-    }
-    setLoading(false);
-  };
-
-  const codeExamples = {
-    python: `import requests
-
-def generate_roasts(content):
-    url = "https://ai4free-vortex-3b-roast-api.hf.space/generate-roasts/"
-    
-    payload = {
-        "content": content
-    }
-    
-    response = requests.post(url, json=payload)
-    return response.json()
-
-# Example usage
-result = generate_roasts("Your text here")
-print(result)`,
-
-    javascript: `async function generateRoasts(content) {
-  const response = await fetch(
-    'https://ai4free-vortex-3b-roast-api.hf.space/generate-roasts/',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ content }),
-    }
-  );
-  
-  return await response.json();
-}
-
-// Example usage
-generateRoasts('Your text here')
-  .then(result => console.log(result))
-  .catch(error => console.error(error));`,
-
-    curl: `curl -X 'POST' \\
-  'https://ai4free-vortex-3b-roast-api.hf.space/generate-roasts/' \\
-  -H 'accept: application/json' \\
-  -H 'Content-Type: application/json' \\
-  -d '{
-    "content": "Your text here"
-  }'`
-  };
+  const [isDark, setIsDark] = useState(true);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white">
-      <nav className="backdrop-blur-md bg-black/20 border-b border-white/10 sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Terminal className="w-8 h-8 text-purple-400" />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                Roast Generator API
-              </h1>
-            </div>
-            <div className="flex items-center space-x-6">
-              <a href="#" className="flex items-center space-x-2 hover:text-purple-400 transition-colors">
-                <Book className="w-5 h-5" />
-                <span>Docs</span>
-              </a>
-              <a href="#" className="flex items-center space-x-2 hover:text-purple-400 transition-colors">
-                <Github className="w-5 h-5" />
-                <span>GitHub</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <AppErrorBoundary>
+      <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900' : 'bg-gradient-to-br from-gray-100 via-purple-100 to-gray-100'} ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-200`}>
+        <Toaster position="top-right" />
+        <Navigation isDark={isDark} toggleTheme={() => setIsDark(!isDark)} />
 
-      <main className="container mx-auto px-6 py-12">
-        <div className="max-w-4xl mx-auto space-y-12">
-          <section className="text-center space-y-4">
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Generate Creative Roasts Instantly
-            </h2>
-            <p className="text-xl text-gray-300">
-              Powerful API for generating witty and creative roasts using AI
-            </p>
-          </section>
+        <main className="container mx-auto px-6 py-12">
+          <div className="max-w-4xl mx-auto space-y-12">
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center space-y-4"
+            >
+              <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                Generate Creative Roasts Instantly
+              </h2>
+              <p className={`text-xl ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Powered by Vortex 3B AI Model
+              </p>
+            </motion.section>
 
-          <section className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-8 space-y-6">
-            <div className="flex items-center space-x-4 mb-6">
-              <Globe className="w-6 h-6 text-purple-400" />
-              <h2 className="text-2xl font-semibold">Try It Out</h2>
-            </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">
-                  Content to Roast
-                </label>
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full h-32 bg-black/20 rounded-lg p-4 text-white placeholder-gray-500 border border-white/10 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 focus:outline-none transition-all"
-                  placeholder="Enter text to generate roasts..."
-                />
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className={`${isDark ? 'bg-white/5' : 'bg-white/80'} backdrop-blur-lg rounded-xl border ${isDark ? 'border-white/10' : 'border-gray-200'} p-8 space-y-6 transition-colors duration-200`}
+            >
+              <div className="flex items-center space-x-4 mb-6">
+                <Info className="w-6 h-6 text-purple-400" />
+                <h2 className="text-2xl font-semibold">About</h2>
               </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium py-3 px-6 rounded-lg transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center space-x-2"
-              >
-                {loading ? (
-                  <span className="flex items-center space-x-2">
-                    <Coffee className="w-5 h-5 animate-spin" />
-                    <span>Generating...</span>
-                  </span>
-                ) : (
-                  <>
-                    <Send className="w-5 h-5" />
-                    <span>Generate Roasts</span>
-                  </>
-                )}
-              </button>
-            </form>
-            
-            {response && (
-              <div className="mt-6 space-y-2">
-                <h3 className="font-medium text-purple-400">Response</h3>
-                <pre className="bg-black/20 p-4 rounded-lg font-mono text-sm overflow-x-auto border border-white/10">
-                  {response}
-                </pre>
+              <div className="prose prose-invert max-w-none">
+                <p className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  The Roast Generator API is powered by HelpingAI's Vortex 3B model, a state-of-the-art language model 
+                  specifically trained for generating creative and witty roasts. This API provides a simple interface 
+                  to access the model's capabilities, allowing developers to integrate humorous content generation 
+                  into their applications.
+                </p>
               </div>
-            )}
-          </section>
+            </motion.section>
 
-          <section className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-8">
-            <div className="flex items-center space-x-4 mb-6">
-              <Code className="w-6 h-6 text-purple-400" />
-              <h2 className="text-2xl font-semibold">Code Examples</h2>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex space-x-2 mb-6">
-                {Object.keys(codeExamples).map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => setActiveTab(lang)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      activeTab === lang
-                        ? 'bg-purple-600 text-white'
-                        : 'text-gray-400 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    {lang.charAt(0).toUpperCase() + lang.slice(1)}
-                  </button>
-                ))}
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className={`${isDark ? 'bg-white/5' : 'bg-white/80'} backdrop-blur-lg rounded-xl border ${isDark ? 'border-white/10' : 'border-gray-200'} p-8 space-y-6 transition-colors duration-200`}
+            >
+              <div className="flex items-center space-x-4 mb-6">
+                <Globe className="w-6 h-6 text-purple-400" />
+                <h2 className="text-2xl font-semibold">Try It Out</h2>
               </div>
               
-              <CodeBlock
-                language={activeTab}
-                code={codeExamples[activeTab as keyof typeof codeExamples]}
-              />
-            </div>
-          </section>
+              <TryItOut isDark={isDark} />
+            </motion.section>
 
-          <section className="bg-white/5 backdrop-blur-lg rounded-xl border border-white/10 p-8">
-            <div className="flex items-center space-x-4 mb-6">
-              <Terminal className="w-6 h-6 text-purple-400" />
-              <h2 className="text-2xl font-semibold">API Reference</h2>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium text-purple-400 mb-2">Endpoint</h3>
-                <pre className="bg-black/20 p-4 rounded-lg font-mono text-sm border border-white/10">
-                  POST https://ai4free-vortex-3b-roast-api.hf.space/generate-roasts/
-                </pre>
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className={`${isDark ? 'bg-white/5' : 'bg-white/80'} backdrop-blur-lg rounded-xl border ${isDark ? 'border-white/10' : 'border-gray-200'} p-8 transition-colors duration-200`}
+            >
+              <div className="flex items-center space-x-4 mb-6">
+                <Terminal className="w-6 h-6 text-purple-400" />
+                <h2 className="text-2xl font-semibold">Integration Guide</h2>
               </div>
 
-              <div>
-                <h3 className="text-lg font-medium text-purple-400 mb-2">Request Format</h3>
-                <pre className="bg-black/20 p-4 rounded-lg font-mono text-sm border border-white/10">
-{`{
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {Object.keys(codeExamples).map((lang) => (
+                    <LanguageTab
+                      key={lang}
+                      language={lang}
+                      active={activeTab === lang}
+                      onClick={() => setActiveTab(lang)}
+                      isDark={isDark}
+                    />
+                  ))}
+                </div>
+                
+                <CodeBlock
+                  language={activeTab}
+                  code={codeExamples[activeTab as keyof typeof codeExamples]}
+                />
+              </div>
+            </motion.section>
+
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className={`${isDark ? 'bg-white/5' : 'bg-white/80'} backdrop-blur-lg rounded-xl border ${isDark ? 'border-white/10' : 'border-gray-200'} p-8 transition-colors duration-200`}
+            >
+              <div className="flex items-center space-x-4 mb-6">
+                <Terminal className="w-6 h-6 text-purple-400" />
+                <h2 className="text-2xl font-semibold">API Reference</h2>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium text-purple-400 mb-2">Endpoint</h3>
+                  <CodeBlock
+                    language="bash"
+                    code="POST https://ai4free-vortex-3b-roast-api.hf.space/generate-roasts/"
+                  />
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-medium text-purple-400 mb-2">Request Format</h3>
+                  <CodeBlock
+                    language="json"
+                    code={`{
   "content": "string"  // Required: Text to generate roasts for
 }`}
-                </pre>
-              </div>
+                  />
+                </div>
 
-              <div>
-                <h3 className="text-lg font-medium text-purple-400 mb-2">Response Format</h3>
-                <pre className="bg-black/20 p-4 rounded-lg font-mono text-sm border border-white/10">
-{`{
+                <div>
+                  <h3 className="text-lg font-medium text-purple-400 mb-2">Response Format</h3>
+                  <CodeBlock
+                    language="json"
+                    code={`{
   "roasts": [
     "Roast message 1",
     "Roast message 2",
     ...
   ]
 }`}
-                </pre>
+                  />
+                </div>
               </div>
-            </div>
-          </section>
-        </div>
-      </main>
-
-      <footer className="border-t border-white/10 mt-20">
-        <div className="container mx-auto px-6 py-8">
-          <div className="text-center text-gray-400">
-            <p>© {new Date().getFullYear()} Roast Generator API. All rights reserved.</p>
+            </motion.section>
           </div>
-        </div>
-      </footer>
-    </div>
+        </main>
+
+        <footer className={`border-t ${isDark ? 'border-white/10' : 'border-gray-200'} mt-20 transition-colors duration-200`}>
+          <div className="container mx-auto px-6 py-8">
+            <div className={`text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              <p>© {new Date().getFullYear()} HelpingAI. All rights reserved.</p>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </AppErrorBoundary>
   );
 }
 
